@@ -1,0 +1,41 @@
+{
+    "name": "gap/i18n",
+    "type": "library",
+    "description": "Gap I18n",
+    "keywords": [
+        "gap"
+    ],
+    "homepage": "https://project.tecposter.cn/diffusion/55/",
+    "authors": [
+        {
+            "name": "zhanjh",
+            "email": "zhanjh@126.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.1.0",
+        "gap/database": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Gap\\I18n\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "phpunit\\Gap\\I18n\\": "phpunit"
+        }
+    },
+    "scripts": {
+        "test": [
+            "@phpcs",
+            "@phpmd",
+            "@phpstan",
+            "@phpunit"
+        ],
+        "phpunit": "phpunit",
+        "phpstan": "phpstan analyse -l 7 -c phpstan.neon phpunit src",
+        "phpcs": "phpcs --report=full --standard=psr2 --extensions=php src phpunit",
+        "phpmd": "phpmd src,phpunit text cleancode,codesize,controversial,design,naming,unusedcode"
+    }
+}
