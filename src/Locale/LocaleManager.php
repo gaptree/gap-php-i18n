@@ -6,10 +6,21 @@ use Gap\Config\ConfigManager;
 class LocaleManager
 {
     protected $localeOpts;
+    protected $localeKey;
 
     public function __construct($localeOpts)
     {
         $this->localeOpts = $localeOpts;
+    }
+
+    public function setLocaleKey(string $localeKey): void
+    {
+        $this->localeKey = $localeKey;
+    }
+
+    public function getLocaleKey(): string
+    {
+        return $this->localeKey;
     }
 
     public function getMode()
