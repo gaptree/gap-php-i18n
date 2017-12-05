@@ -5,8 +5,8 @@ use Gap\Config\ConfigManager;
 
 class LocaleManager
 {
-    protected $localeOpts;
-    protected $localeKey;
+    protected $localeOpts = [];
+    protected $localeKey = '';
 
     public function __construct($localeOpts)
     {
