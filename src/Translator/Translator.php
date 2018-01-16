@@ -9,7 +9,7 @@ class Translator
     protected $cnn;
     protected $cache;
 
-    protected $table = 'trans';
+    protected $table = 'gap_trans';
     protected $defaultLocaleKey = 'zh-cn';
 
     public function __construct(MysqlConnection $cnn, Redis $cache)
