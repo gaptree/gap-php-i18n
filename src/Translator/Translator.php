@@ -2,7 +2,7 @@
 namespace Gap\I18n\Translator;
 
 use Redis;
-use Gap\Database\Connection\Mysql as MysqlConnection;
+use Gap\Db\MySql\Cnn;
 
 class Translator
 {
@@ -12,7 +12,7 @@ class Translator
     protected $table = 'gap_trans';
     protected $defaultLocaleKey = 'zh-cn';
 
-    public function __construct(MysqlConnection $cnn, Redis $cache)
+    public function __construct(Cnn $cnn, Redis $cache)
     {
         $this->cnn = $cnn;
         $this->cache = $cache;
@@ -77,8 +77,9 @@ class Translator
         $this->cache->hDel($localeKey, strtolower($transKey));
         $this->cnn->delete()
             ->from($this->table)
-            ->where('key', '=', $transKey)
-            ->andWhere('localeKey', '=', $localeKey)
+            ->where()
+                ->expect('localeKey')->beStr($localeKey)
+                ->andExpect('key')->beStr($transKey)
             ->execute();
     }
 
@@ -86,8 +87,9 @@ class Translator
     {
         $obj = $this->cnn->select('value')
             ->from($this->table)
-            ->where('localeKey', '=', $localeKey)
-            ->andWhere('key', '=', $key)
+            ->where()
+                ->expect('localeKey')->beStr($localeKey)
+                ->andExpect('key')->beStr($key)
             ->fetchObj();
 
         if (!$obj) {
@@ -101,20 +103,22 @@ class Translator
     {
         if ($this->findFromDb($localeKey, $key)) {
             $this->cnn->update($this->table)
-                ->where('localeKey', '=', $localeKey)
-                ->andWhere('key', '=', $key)
-                ->set('key', $key)
-                ->set('value', $value)
+                ->set('value')->beStr($value)
+                ->where()
+                    ->expect('localeKey')->beStr($localeKey)
+                    ->andExpect('key')->beStr($key)
                 ->execute();
 
             return;
         }
 
         $this->cnn->insert($this->table)
-            ->value('transId', $this->cnn->zid())
-            ->value('localeKey', $localeKey)
-            ->value('key', $key)
-            ->value('value', $value)
+            ->field('transId', 'localeKey', 'key', 'value')
+            ->value()
+                ->addStr($this->cnn->zid())
+                ->addStr($localeKey)
+                ->addStr($key)
+                ->addStr($value)
             ->execute();
     }
 
