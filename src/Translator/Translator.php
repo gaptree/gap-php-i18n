@@ -2,41 +2,49 @@
 namespace Gap\I18n\Translator;
 
 use Redis;
-use Gap\Db\MySql\Cnn;
+use Gap\I18n\Translator\Repo\TranslatorRepoInterface;
 
 class Translator
 {
-    protected $cnn;
     protected $cache;
+    protected $repo;
 
     protected $table = 'gap_trans';
-    protected $defaultLocaleKey = 'zh-cn';
+    protected $localeKey = 'zh-cn';
+    //protected $defaultLocaleKey = 'zh-cn';
 
-    public function __construct(Cnn $cnn, Redis $cache)
+    public function __construct(TranslatorRepoInterface $repo, Redis $cache)
     {
-        $this->cnn = $cnn;
+        $this->repo = $repo;
         $this->cache = $cache;
     }
 
-    public function setDefaultLocaleKey($localeKey)
+    public function setLocaleKey(string $localeKey): void
     {
-        $this->defaultLocaleKey = $localeKey;
+        $this->localeKey = $localeKey;
     }
 
-    public function get($key, $vars = [], $localeKey = '')
+    public function localeGet(string $localeKey, string $key, string ...$vars): string
     {
-        if (!$localeKey) {
-            $localeKey = $this->defaultLocaleKey;
-        }
+        $this->setLocaleKey($localeKey);
+        return $this->get($key, ...$vars);
+    }
 
+    public function localeSet(string $localeKey, string $key, string $value): void
+    {
+        $this->setLocaleKey($localeKey);
+        $this->set($key, $value);
+    }
+
+    public function get(string $key, string ...$vars): string
+    {
         if (!$vars) {
-            return $this->lget($key, $localeKey);
+            return $this->getTransValue($this->localeKey, $key);
         }
 
-        if (is_string($vars)) {
-            $vars = [$vars];
-        }
-
+        $key = $key . '-%$' . implode('$s-%$', array_keys($vars)) . '$s';
+        return sprintf($this->getTransValue($this->localeKey, $key), ...$vars);
+        /* todo delete later
         $index = 1;
         $args = [];
         $args[0] = '';
@@ -46,83 +54,34 @@ class Translator
             $args[$index] = $val;
             $index++;
         }
-        $args[0] = $this->lget($key, $localeKey);
+        $args[0] = $this->lget($key, $this->localeKey);
 
         return sprintf(...$args);
+        */
     }
 
-    public function set($localeKey, $key, $value)
+    public function set(string $key, string $value): void
     {
-        if (!$key) {
-            // todo
-            throw new \Exception("cannot translate empty str");
-        }
-
-        if (!$value) {
-            // todo
-            throw new \Exception("value could not be empty");
-        }
-
-        if (!$localeKey) {
-            // todo
-            throw new \Exception("localeKey cannot be empty");
-        }
-
-        $this->cache->hSet($localeKey, strtolower($key), $value);
-        $this->saveToDb($localeKey, $key, $value);
+        $this->setTrans($this->localeKey, $key, $value);
     }
 
-    public function delete($localeKey, $transKey)
+    public function delete(string $localeKey, string $transKey): void
     {
         $this->cache->hDel($localeKey, strtolower($transKey));
-        $this->cnn->delete()
-            ->from($this->table)
-            ->where()
-                ->expect('localeKey')->beStr($localeKey)
-                ->andExpect('key')->beStr($transKey)
-            ->execute();
+        $this->repo->delete($localeKey, $transKey);
     }
 
-    protected function findFromDb($localeKey, $key)
+    protected function findFromDb(string $localeKey, string $key): string
     {
-        $obj = $this->cnn->select('value')
-            ->from($this->table)
-            ->where()
-                ->expect('localeKey')->beStr($localeKey)
-                ->andExpect('key')->beStr($key)
-            ->fetchObj();
-
-        if (!$obj) {
-            return null;
-        }
-
-        return $obj->value;
+        return $this->repo->fetchTransValue($localeKey, $key);
     }
 
-    protected function saveToDb($localeKey, $key, $value)
+    protected function saveToDb(string $localeKey, string $key, string $value): void
     {
-        if ($this->findFromDb($localeKey, $key)) {
-            $this->cnn->update($this->table)
-                ->set('value')->beStr($value)
-                ->where()
-                    ->expect('localeKey')->beStr($localeKey)
-                    ->andExpect('key')->beStr($key)
-                ->execute();
-
-            return;
-        }
-
-        $this->cnn->insert($this->table)
-            ->field('transId', 'localeKey', 'key', 'value')
-            ->value()
-                ->addStr($this->cnn->zid())
-                ->addStr($localeKey)
-                ->addStr($key)
-                ->addStr($value)
-            ->execute();
+        $this->repo->save($localeKey, $key, $value);
     }
 
-    protected function lget($key, $localeKey)
+    protected function getTransValue($localeKey, $key)
     {
         if (!$key) {
             // todo
@@ -144,7 +103,28 @@ class Translator
         }
 
         $value = ':' . $key;
-        $this->set($localeKey, $key, $value);
+        $this->setTrans($localeKey, $key, $value);
         return $value;
+    }
+
+    protected function setTrans($localeKey, $key, $value)
+    {
+        if (!$key) {
+            // todo
+            throw new \Exception("cannot translate empty str");
+        }
+
+        if (!$value) {
+            // todo
+            throw new \Exception("value could not be empty");
+        }
+
+        if (!$localeKey) {
+            // todo
+            throw new \Exception("localeKey cannot be empty");
+        }
+
+        $this->cache->hSet($localeKey, strtolower($key), $value);
+        $this->saveToDb($localeKey, $key, $value);
     }
 }
