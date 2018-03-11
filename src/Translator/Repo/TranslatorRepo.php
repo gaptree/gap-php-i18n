@@ -17,17 +17,17 @@ class TranslatorRepo implements TranslatorRepoInterface
     {
         if ($this->fetchTransValue($localeKey, $transKey)) {
             $this->cnn->update($this->table)
-                ->set('value')->beStr($transValue)
+                ->set('`value`')->beStr($transValue)
                 ->where()
                     ->expect('localeKey')->beStr($localeKey)
-                    ->andExpect('key')->beStr($transKey)
+                    ->andExpect('`key`')->beStr($transKey)
                 ->execute();
 
             return;
         }
 
         $this->cnn->insert($this->table)
-            ->field('transId', 'localeKey', 'key', 'value')
+            ->field('transId', 'localeKey', '`key`', '`value`')
             ->value()
                 ->addStr($this->cnn->zid())
                 ->addStr($localeKey)
@@ -42,23 +42,24 @@ class TranslatorRepo implements TranslatorRepoInterface
             ->from($this->table)
             ->where()
                 ->expect('localeKey')->beStr($localeKey)
-                ->andExpect('key')->beStr($transKey)
+                ->andExpect('`key`')->beStr($transKey)
             ->execute();
     }
 
     public function fetchTransValue(string $localeKey, string $transKey): string
     {
-        $transArr = $this->cnn->select('value')
+        $transArr = $this->cnn->select('`value`')
             ->from($this->table)
             ->where()
                 ->expect('localeKey')->beStr($localeKey)
-                ->andExpect('key')->beStr($transKey)
+                ->andExpect('`key`')->beStr($transKey)
+            ->execute()
             ->fetchAssoc();
 
         if (!$transArr) {
             return '';
         }
 
-        return $transArr['value'];
+        return $transArr['`value`'];
     }
 }

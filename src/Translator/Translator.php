@@ -42,7 +42,11 @@ class Translator
             return $this->getTransValue($this->localeKey, $key);
         }
 
-        $key = $key . '-%$' . implode('$s-%$', array_keys($vars)) . '$s';
+        //$key = $key . '-%$' . implode('$s-%$', array_keys($vars)) . '$s';
+        $count = count($vars);
+        for ($i = 1; $i <= $count; $i++) {
+            $key .= '-%' . $i . '$s';
+        }
         return sprintf($this->getTransValue($this->localeKey, $key), ...$vars);
         /* todo delete later
         $index = 1;
