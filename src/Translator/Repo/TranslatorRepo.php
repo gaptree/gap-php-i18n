@@ -67,6 +67,6 @@ class TranslatorRepo implements TranslatorRepoInterface
         if (!$transArr) {
             return '';
         }
-        return $transArr['`value`'];
+        return $transArr['value'];
     }
 }
