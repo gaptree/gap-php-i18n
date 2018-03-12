@@ -15,51 +15,58 @@ class TranslatorRepo implements TranslatorRepoInterface
 
     public function save(string $localeKey, string $transKey, string $transValue): void
     {
+        $cnn = $this->cnn;
         if ($this->fetchTransValue($localeKey, $transKey)) {
-            $this->cnn->update($this->table)
-                ->set('`value`')->beStr($transValue)
-                ->where()
-                    ->expect('localeKey')->beStr($localeKey)
-                    ->andExpect('`key`')->beStr($transKey)
+            $cnn->update($cnn->table($this->table))
+                ->set('`value`', $cnn->str($transValue))
+                ->where(
+                    $cnn->cond()
+                        ->expect('localeKey')->equal($cnn->str($localeKey))
+                        ->andExpect('`key`')->equal($cnn->str($transKey))
+                )
                 ->execute();
-
             return;
         }
-
-        $this->cnn->insert($this->table)
+        $cnn->insert($this->table)
             ->field('transId', 'localeKey', '`key`', '`value`')
-            ->value()
-                ->addStr($this->cnn->zid())
-                ->addStr($localeKey)
-                ->addStr($transKey)
-                ->addStr($transValue)
+            ->value(
+                $cnn->value()
+                    ->add($cnn->str($cnn->zid()))
+                    ->add($cnn->str($localeKey))
+                    ->add($cnn->str($transKey))
+                    ->add($cnn->str($transValue))
+            )
             ->execute();
     }
 
     public function delete(string $localeKey, string $transKey): void
     {
+        $cnn = $this->cnn;
         $this->cnn->delete()
-            ->from($this->table)
-            ->where()
-                ->expect('localeKey')->beStr($localeKey)
-                ->andExpect('`key`')->beStr($transKey)
+            ->from($cnn->table($this->table))
+            ->where(
+                $cnn->cond()
+                    ->expect('`key`')->equal($cnn->str($transKey))
+                    ->andExpect('localeKey')->equal($cnn->str($localeKey))
+            )
             ->execute();
     }
 
     public function fetchTransValue(string $localeKey, string $transKey): string
     {
-        $transArr = $this->cnn->select('`value`')
-            ->from($this->table)
-            ->where()
-                ->expect('localeKey')->beStr($localeKey)
-                ->andExpect('`key`')->beStr($transKey)
-            ->execute()
+        $cnn = $this->cnn;
+        $transArr = $cnn->select('`value`')
+            ->from($cnn->table($this->table))
+            ->where(
+                $cnn->cond()
+                    ->expect('localeKey')->equal($cnn->str($localeKey))
+                    ->andExpect('`key`')->equal($cnn->str($transKey))
+            )
+            ->limit(1)
             ->fetchAssoc();
-
         if (!$transArr) {
             return '';
         }
-
         return $transArr['`value`'];
     }
 }
