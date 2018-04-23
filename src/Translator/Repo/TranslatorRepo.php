@@ -1,14 +1,14 @@
 <?php
 namespace Gap\I18n\Translator\Repo;
 
-use Gap\Db\MySql\Cnn;
+use Gap\Db\Contract\CnnInterface;
 
 class TranslatorRepo implements TranslatorRepoInterface
 {
     protected $cnn;
     protected $table = 'gap_trans';
 
-    public function __construct(Cnn $cnn)
+    public function __construct(CnnInterface $cnn)
     {
         $this->cnn = $cnn;
     }
