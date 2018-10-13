@@ -31,7 +31,7 @@ class TranslatorRepo implements TranslatorRepoInterface
             ->field('transId', 'localeKey', '`key`', '`value`')
             ->value(
                 $cnn->value()
-                    ->add($cnn->str($cnn->zid()))
+                    ->add($cnn->str($cnn->uniqBin()))
                     ->add($cnn->str($localeKey))
                     ->add($cnn->str($transKey))
                     ->add($cnn->str($transValue))
